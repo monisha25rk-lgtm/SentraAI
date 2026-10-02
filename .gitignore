@@ -1,0 +1,30 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Model checkpoints
+checkpoints/
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# Local datasets
+data/raw/
+data/processed/
+
+# Experiment outputs
+runs/
+logs/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment / secrets
+.env
+
+# OS
+.DS_Store
+Thumbs.db
