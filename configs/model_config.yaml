@@ -1,5 +1,3 @@
-vocab_size: 687
-
 embedding_dim: 128
 
 num_heads: 4

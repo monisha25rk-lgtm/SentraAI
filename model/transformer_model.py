@@ -1,7 +1,7 @@
 import torch.nn as nn
 
-from model import InputEmbedding
-from transformer_block import TransformerBlock
+from .model import InputEmbedding
+from .transformer_block import TransformerBlock
 
 
 class TransformerModel(nn.Module):
@@ -27,7 +27,7 @@ class TransformerModel(nn.Module):
         )
 
         # --------------------------------
-        # CREATE TRANSFORMER BLOCKS
+        # TRANSFORMER BLOCKS
         # --------------------------------
 
         self.transformer_blocks = nn.ModuleList(
@@ -41,6 +41,15 @@ class TransformerModel(nn.Module):
             ]
         )
 
+        # --------------------------------
+        # LANGUAGE MODEL HEAD
+        # --------------------------------
+
+        self.output_projection = nn.Linear(
+            embedding_dim,
+            vocab_size
+        )
+
     def forward(self, token_ids):
 
         # --------------------------------
@@ -50,15 +59,16 @@ class TransformerModel(nn.Module):
         x = self.embedding(token_ids)
 
         # --------------------------------
-        # 2. PROCESS THROUGH ALL BLOCKS
+        # 2. TRANSFORMER BLOCKS
         # --------------------------------
 
         for block in self.transformer_blocks:
-
             x = block(x)
 
         # --------------------------------
-        # 3. FINAL REPRESENTATION
+        # 3. VOCABULARY PROJECTION
         # --------------------------------
 
-        return x
+        logits = self.output_projection(x)
+
+        return logits

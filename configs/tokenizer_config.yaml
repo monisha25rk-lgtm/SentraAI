@@ -1,0 +1,12 @@
+tokenizer_version: 1
+
+source:
+  path: data/raw/corpus_100.txt
+
+tokenizer:
+  type: byte_level_bpe
+  base_vocab_size: 256
+  merges_path: tokenizer/merges.txt
+
+training:
+  rebuild: false

@@ -1,63 +1,134 @@
+
 from pathlib import Path
-import yaml
 import sys
-
-sys.path.append("tokenizer")
-
-from byte_bpe import encode
+import yaml
 
 
-def load_dataset_config(config_path):
-    """
-    Load the dataset configuration from YAML.
-    """
+# ========================================
+# PROJECT ROOT
+# ========================================
 
-    with open(config_path, "r", encoding="utf-8") as file:
+PROJECT_ROOT = Path(
+    __file__
+).resolve().parents[1]
+
+sys.path.insert(
+    0,
+    str(PROJECT_ROOT)
+)
+
+
+# ========================================
+# IMPORT TOKENIZER
+# ========================================
+
+from tokenizer.byte_bpe import (
+    encode,
+    load_tokenizer
+)
+
+
+# ========================================
+# LOAD DATASET CONFIGURATION
+# ========================================
+
+def load_dataset_config():
+
+    config_path = (
+        PROJECT_ROOT
+        / "configs"
+        / "dataset_config.yaml"
+    )
+
+    with open(
+        config_path,
+        "r",
+        encoding="utf-8"
+    ) as file:
+
         config = yaml.safe_load(file)
 
     return config
 
 
-def load_text_dataset(config):
-    """
-    Load a text dataset using the path specified
-    in the dataset configuration.
-    """
+# ========================================
+# LOAD MODEL CONFIGURATION
+# ========================================
+#
+# Sequence length belongs to the model
+# architecture, so it is loaded from
+# model_config.yaml.
+#
+# ========================================
 
-    dataset_path = Path(config["source"]["path"])
+def load_model_config():
 
-    with open(dataset_path, "r", encoding="utf-8") as file:
+    config_path = (
+        PROJECT_ROOT
+        / "configs"
+        / "model_config.yaml"
+    )
+
+    with open(
+        config_path,
+        "r",
+        encoding="utf-8"
+    ) as file:
+
+        config = yaml.safe_load(file)
+
+    return config
+
+
+# ========================================
+# LOAD TEXT DATASET
+# ========================================
+
+def load_text_dataset(
+    config
+):
+
+    dataset_path = (
+        PROJECT_ROOT
+        / config["source"]["path"]
+    )
+
+    with open(
+        dataset_path,
+        "r",
+        encoding="utf-8"
+    ) as file:
+
         text = file.read()
 
     return text
 
 
-def load_tokenizer():
-    """
-    Load the persisted Byte-Level BPE merges.
-    """
+# ========================================
+# BUILD TOKEN STREAM
+# ========================================
 
-    merges = []
+def build_token_stream(
+    text,
+    merges
+):
 
-    with open("tokenizer/merges.txt", "r", encoding="utf-8") as file:
-        for line in file:
-            first, second, token_id = map(int, line.split())
-            merges.append((first, second, token_id))
-
-    return merges
-def build_token_stream(text, merges):
-    """
-    Convert raw text into a continuous stream of token IDs.
-    """
-
-    token_ids = encode(text, merges)
+    token_ids = encode(
+        text,
+        merges
+    )
 
     return token_ids
 
-def create_sequences(token_stream, sequence_length):
-    """
-    Split the token stream into fixed-length sequences.
-    """
+
+# ========================================
+# CREATE FIXED-LENGTH SEQUENCES
+# ========================================
+
+def create_sequences(
+    token_stream,
+    sequence_length
+):
 
     sequences = []
 
@@ -66,62 +137,139 @@ def create_sequences(token_stream, sequence_length):
         len(token_stream) - sequence_length + 1,
         sequence_length
     ):
+
         sequence = token_stream[
             start:start + sequence_length
         ]
 
-        sequences.append(sequence)
+        sequences.append(
+            sequence
+        )
 
     return sequences
 
-def create_input_target_pairs(sequences):
-    """
-    Create input and target sequences for next-token prediction.
-    """
+
+# ========================================
+# CREATE INPUT / TARGET PAIRS
+# ========================================
+
+def create_input_target_pairs(
+    sequences
+):
 
     inputs = []
+
     targets = []
 
     for sequence in sequences:
+
         input_sequence = sequence[:-1]
+
         target_sequence = sequence[1:]
 
-        inputs.append(input_sequence)
-        targets.append(target_sequence)
+        inputs.append(
+            input_sequence
+        )
 
-    return inputs, targets
+        targets.append(
+            target_sequence
+        )
 
-
-
-if __name__ == "__main__":
-
-    config = load_dataset_config(
-        "configs/dataset_config.yaml"
+    return (
+        inputs,
+        targets
     )
 
-    text = load_text_dataset(config)
 
-    merges = load_tokenizer()
+# ========================================
+# LOAD COMPLETE TRAINING DATA
+# ========================================
 
-    token_stream = build_token_stream(text, merges)
-    sequence_length = 4
+def load_training_data():
+
+    # --------------------------------
+    # DATASET CONFIG
+    # --------------------------------
+
+    dataset_config = (
+        load_dataset_config()
+    )
+
+    # --------------------------------
+    # MODEL CONFIG
+    # --------------------------------
+
+    model_config = (
+        load_model_config()
+    )
+
+    # --------------------------------
+    # LOAD DATASET
+    # --------------------------------
+
+    text = load_text_dataset(
+        dataset_config
+    )
+
+    # --------------------------------
+    # LOAD FIXED TOKENIZER
+    # --------------------------------
+
+    (
+        merges,
+        vocabulary,
+        vocabulary_size,
+        tokenizer_config
+    ) = load_tokenizer()
+
+    # --------------------------------
+    # TOKENIZE DATASET
+    # --------------------------------
+
+    token_stream = build_token_stream(
+        text,
+        merges
+    )
+
+    # --------------------------------
+    # GET MODEL SEQUENCE LENGTH
+    # --------------------------------
+
+    sequence_length = (
+        model_config[
+            "sequence_length"
+        ]
+    )
+
+    # --------------------------------
+    # CREATE SEQUENCES
+    # --------------------------------
 
     sequences = create_sequences(
-    token_stream,
-    sequence_length
-     )
-    inputs, targets = create_input_target_pairs(sequences)
+        token_stream,
+        sequence_length
+    )
 
-    print("First input:", inputs[0])
-    print("First target:", targets[0])
+    # --------------------------------
+    # CREATE INPUT / TARGET PAIRS
+    # --------------------------------
 
-    print("Sequence length:", sequence_length)
-    print("Number of sequences:", len(sequences))
-    print("First sequence:", sequences[0])
+    inputs, targets = (
+        create_input_target_pairs(
+            sequences
+        )
+    )
 
-    print("Dataset version:", config["dataset_version"])
-    print("Tokenizer version:", config["tokenizer_version"])
-    print("Dataset characters:", len(text))
-    print("Number of merges:", len(merges))
-    print("Number of token IDs:", len(token_stream))
-    print("First 20 token IDs:", token_stream[:20])
+    # --------------------------------
+    # RETURN ALL REQUIRED INFORMATION
+    # --------------------------------
+
+    return (
+        inputs,
+        targets,
+        dataset_config,
+        model_config,
+        tokenizer_config,
+        vocabulary_size
+    )
+

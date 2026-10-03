@@ -55,18 +55,18 @@ output = model(token_ids)
 
 
 # =================================
-# FINAL OUTPUT
+# FINAL MODEL OUTPUT
 # =================================
 
 print("\n========================================")
-print("FINAL TRANSFORMER OUTPUT")
+print("FINAL LANGUAGE MODEL OUTPUT")
 print("========================================")
 
 print("Output shape:", output.shape)
 
 print(
-    "First 5 values:",
+    "First 5 logits for first token:",
     output[0, 0, :5]
 )
 
-print("\nComplete Transformer processing finished.")
+print("\nLanguage model head test completed.")

@@ -5,6 +5,3 @@ tokenizer_version: 1
 source:
   type: text
   path: data/raw/corpus_100.txt
-
-training:
-  sequence_length: null
